@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* Tokens do tema (v4) -> geram classes como bg-brand, text-accent, shadow-soft */
+@theme {
+  --color-brand: #1a1a2e;
+  --color-accent: #16a34a;
+  --shadow-soft: 0 8px 24px rgba(0,0,0,.08);
+}
+
+body { @apply bg-gray-100 text-gray-800; }
