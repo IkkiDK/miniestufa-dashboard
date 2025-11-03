@@ -176,10 +176,15 @@ export function useWebSocket(url, options = {}) {
  * @returns {object} Estado dos sensores e métodos de conexão
  */
 export function useMiniEstufa(options = {}) {
+  // Não define URL padrão aqui - deve ser fornecida pelo componente
   const {
-    apiUrl = 'ws://localhost:8080/ws',
+    apiUrl,
     ...wsOptions
   } = options;
+  
+  if (!apiUrl) {
+    throw new Error('apiUrl é obrigatório para useMiniEstufa');
+  }
 
   const websocket = useWebSocket(apiUrl, wsOptions);
   

@@ -1,4 +1,5 @@
 import { useMiniEstufa } from '../hooks/useWebSocket';
+import config from '../config';
 
 /**
  * Componente de exemplo mostrando como usar dados em tempo real da API
@@ -14,9 +15,9 @@ export default function RealtimeSensorDisplay() {
     error,
     reconnect,
   } = useMiniEstufa({
-    apiUrl: 'ws://localhost:8080/ws',
-    reconnect: true,
-    reconnectInterval: 5000,
+    apiUrl: config.wsUrl,
+    reconnect: config.reconnect.enabled,
+    reconnectInterval: config.reconnect.interval,
   });
 
   // Status da conexão com cores
@@ -67,7 +68,7 @@ export default function RealtimeSensorDisplay() {
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-700 font-semibold">❌ Erro de Conexão</p>
           <p className="text-red-600 text-sm mt-1">
-            Verifique se o servidor está rodando em ws://localhost:8080/ws
+            Verifique se o servidor está rodando em {config.wsUrl}
           </p>
         </div>
       )}

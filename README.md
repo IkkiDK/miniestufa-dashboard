@@ -1,27 +1,29 @@
 # 🌱 Dashboard Mini Estufa
 
-Dashboard moderno para monitoramento de sensores de uma mini estufa, construído com React + Vite.
+Dashboard em tempo real para monitoramento de sensores de uma mini estufa, construído com React + Vite e WebSocket.
 
 ## 📊 Funcionalidades
 
-- **Monitoramento de Sensores em Tempo Real**
+- **Monitoramento em Tempo Real via WebSocket**
   - 🌡️ Temperatura
   - 💧 Umidade do Ar
   - ☀️ Luminosidade
   - 🌿 Umidade do Solo
+  - 🚿 Status da Bomba de Irrigação
   
-- **Visualizações**
+- **Visualizações Interativas**
   - Cards com KPIs e variação percentual
-  - Gráficos interativos de linha (Recharts)
-  - Status da bomba de irrigação
-  - Filtros por sensor específico
+  - Gráficos de linha interativos (Recharts)
+  - Indicadores visuais de status
+  - Reconexão automática em caso de falha
 
-- **Dados**
-  - Atualmente usando dados históricos reais (11-14 out/2025)
-  - Simulação de rotação de dados para demonstração
-  - Preparado para migração para tempo real (ver `DADOS_TEMPO_REAL.md`)
+## 🚀 Instalação e Execução
 
-## 🚀 Como Executar
+### Pré-requisitos
+- Node.js 18+ 
+- npm ou yarn
+
+### Desenvolvimento Local
 
 ```bash
 # Instalar dependências
@@ -37,63 +39,132 @@ npm run build
 npm run preview
 ```
 
+## 🌐 Deploy em Produção
+
+### 1. Configuração de Variáveis de Ambiente
+
+**⚠️ IMPORTANTE:** Configure a variável de ambiente antes do deploy!
+
+```bash
+VITE_WS_URL=wss://miniestufa-backend.onrender.com/ws
+```
+
+**Backend já está rodando em:** `https://miniestufa-backend.onrender.com`
+
+Para instruções detalhadas de configuração por plataforma, veja [ENV_SETUP.md](ENV_SETUP.md)
+
+### 2. Deploy Automático
+
+O projeto está configurado para build automático. Basta fazer push para o repositório conectado à plataforma de hospedagem.
+
+```bash
+git add .
+git commit -m "Configure production environment"
+git push origin main
+```
+
+### 3. Guia Completo de Deploy
+
+Consulte [DEPLOY.md](DEPLOY.md) para:
+- Instruções detalhadas de deploy
+- URLs e endpoints
+- Troubleshooting
+- Checklist completo
+
 ## 📁 Estrutura do Projeto
 
 ```
 src/
 ├── components/          # Componentes reutilizáveis
 │   ├── BombaStatus.jsx  # Status da bomba de irrigação
-│   ├── ChartPanel.jsx   # Gráfico de linha dos sensores
-│   ├── Header.jsx       # Cabeçalho do dashboard
+│   ├── ChartPanel.jsx   # Gráfico de sensores
+│   ├── Header.jsx       # Cabeçalho
+│   ├── RealtimeSensorDisplay.jsx  # Display em tempo real
 │   ├── SensorPicker.jsx # Seletor de sensores
 │   ├── Sidebar.jsx      # Menu lateral
 │   └── StatCard.jsx     # Card de KPI
 ├── data/
-│   └── mock.jsx         # Dados históricos da mini estufa
+│   └── mock.jsx         # Dados mockados para visualização
 ├── hooks/
-│   └── useRotatingData.js  # Hook para simular rotação de dados
+│   ├── useRotatingData.js  # Hook para rotação de dados
+│   └── useWebSocket.js     # Hook para conexão WebSocket
 ├── pages/
 │   └── Dashboard.jsx    # Página principal
 ├── utils/
-│   └── dataParser.js    # Parser para processar dados
+│   └── dataParser.js    # Utilitários de parsing
+├── config.js            # Configurações da aplicação
 └── App.jsx              # Componente raiz
 ```
 
-## 🔄 Migração para Tempo Real
+## ⚙️ Configuração
 
-Este projeto está preparado para receber dados em tempo real. Consulte o arquivo `DADOS_TEMPO_REAL.md` para:
+O arquivo `src/config.js` centraliza as configurações da aplicação:
 
-- Estrutura de API REST
-- Implementação com WebSocket
-- Integração com MQTT
-- Schema do banco de dados
-- Checklist completo de migração
+```javascript
+{
+  wsUrl: 'ws://localhost:8080/ws',  // URL do WebSocket (configurável via VITE_WS_URL)
+  reconnect: {
+    enabled: true,
+    interval: 5000  // Intervalo de reconexão em ms
+  }
+}
+```
+
+## 🔌 Integração com Backend
+
+Este dashboard requer um servidor backend WebSocket. Consulte o repositório do backend para instruções de deploy:
+
+**Endpoints esperados:**
+- `ws://backend/ws` - WebSocket para dados em tempo real
+- `http://backend/api/sensor/latest` - API REST para última leitura
+- `http://backend/health` - Health check
+
+**Formato de dados esperado:**
+```json
+{
+  "data_hora": "03/11/2025 14:30:00",
+  "temperatura": 22.5,
+  "umidade_ar": 65.0,
+  "luminosidade": 75,
+  "umidade_solo": 45,
+  "umidade_solo_bruto": 1850,
+  "status_bomba": "Bomba ativada"
+}
+```
 
 ## 🎨 Tecnologias
 
 - **React 18** - Biblioteca de UI
 - **Vite** - Build tool e dev server
-- **Tailwind CSS** - Estilização
-- **Recharts** - Gráficos
-- **Lucide React** - Ícones
+- **Tailwind CSS** - Framework CSS utilitário
+- **Recharts** - Biblioteca de gráficos
+- **Lucide React** - Ícones modernos
+- **WebSocket API** - Comunicação em tempo real
 
-## 📝 Origem dos Dados
+## 🐛 Troubleshooting
 
-Os dados utilizados são leituras reais de uma mini estufa, contendo:
-- Temperatura ambiente
-- Umidade relativa do ar
-- Luminosidade
-- Umidade do solo (percentual e valor bruto)
-- Status da bomba de irrigação
+### Erro de Conexão WebSocket
 
-Formato original: logs MQTT do tópico `miniEstufaFelipe/leituras`
+Se aparecer "Erro de Conexão":
 
-## 🛠️ Próximos Passos
+1. Verifique se o backend está rodando
+2. Confirme a URL do WebSocket na variável `VITE_WS_URL`
+3. Verifique se o backend tem CORS habilitado
+4. Em produção, use `wss://` (seguro) ao invés de `ws://`
 
-- [ ] Implementar API backend
-- [ ] Conectar com WebSocket/MQTT
-- [ ] Adicionar sistema de alertas
-- [ ] Exportação de dados (CSV/Excel)
-- [ ] Filtros de período personalizados
-- [ ] Modo dark theme
-- [ ] PWA para acesso mobile
+### Build Falha
+
+```bash
+# Limpe o cache e reinstale
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+```
+
+## 📝 Licença
+
+Este projeto foi desenvolvido como parte de um Trabalho de Conclusão de Curso (TCC).
+
+## 👥 Autores
+
+Desenvolvido para monitoramento de mini estufa inteligente.
