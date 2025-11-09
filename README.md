@@ -83,11 +83,11 @@ src/
 │   ├── SensorPicker.jsx # Seletor de sensores
 │   ├── Sidebar.jsx      # Menu lateral
 │   └── StatCard.jsx     # Card de KPI
-├── data/
-│   └── mock.jsx         # Dados mockados para visualização
 ├── hooks/
-│   ├── useRotatingData.js  # Hook para rotação de dados
-│   └── useWebSocket.js     # Hook para conexão WebSocket
+│   ├── useSupabaseHistory.js  # Hook para buscar histórico no Supabase
+│   └── useWebSocket.js        # Hook para conexão WebSocket
+├── services/
+│   └── supabaseClient.js   # Cliente compartilhado do Supabase
 ├── pages/
 │   └── Dashboard.jsx    # Página principal
 ├── utils/

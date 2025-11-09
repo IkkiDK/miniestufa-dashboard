@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { normalizeRealtimePayload } from '../utils/dataParser';
 
 /**
  * Hook customizado para gerenciar conexão WebSocket com a API da mini estufa
@@ -189,16 +190,10 @@ export function useMiniEstufa(options = {}) {
   const websocket = useWebSocket(apiUrl, wsOptions);
   
   // Extrai dados dos sensores com valores padrão
-  const sensorData = websocket.data ? {
-    dataHora: websocket.data.data_hora || '',
-    temperatura: websocket.data.temperatura || 0,
-    umidadeAr: websocket.data.umidade_ar || 0,
-    luminosidade: websocket.data.luminosidade || 0,
-    umidadeSolo: websocket.data.umidade_solo || 0,
-    umidadeSoloBruto: websocket.data.umidade_solo_bruto || 0,
-    statusBomba: websocket.data.status_bomba || 'Bomba desativada',
-    bombaAtiva: websocket.data.status_bomba === 'Bomba ativada',
-  } : null;
+  const sensorData = useMemo(
+    () => normalizeRealtimePayload(websocket.data),
+    [websocket.data],
+  );
 
   return {
     ...websocket,
@@ -208,6 +203,7 @@ export function useMiniEstufa(options = {}) {
     luminosidade: sensorData?.luminosidade,
     umidadeSolo: sensorData?.umidadeSolo,
     bombaAtiva: sensorData?.bombaAtiva,
+    statusLuz: sensorData?.statusLuz,
   };
 }
 

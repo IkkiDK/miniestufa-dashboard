@@ -1,12 +1,10 @@
 import React from "react";
-import { SENSOR_META } from "../data/mock";
-
-const KEYS = ["all","temp","hum","light","soil"];
+import { SENSOR_META, SENSOR_KEYS } from "../constants/sensors";
 
 export default function SensorPicker({ value, onChange }) {
   return (
     <div className="flex flex-wrap gap-2 mb-4">
-      {KEYS.map((k) => {
+      {["all", ...SENSOR_KEYS].map((k) => {
         const active = value === k;
         return (
           <button

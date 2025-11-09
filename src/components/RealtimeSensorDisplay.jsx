@@ -82,6 +82,23 @@ export default function RealtimeSensorDisplay() {
             <p className="text-lg font-mono font-semibold text-gray-700">
               {sensorData.dataHora}
             </p>
+            <div className="flex justify-center gap-4 mt-2 text-xs text-gray-500">
+              {sensorData.tipo && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded">
+                  <span className="font-semibold uppercase">Tipo:</span> {sensorData.tipo}
+                </span>
+              )}
+              {sensorData.idx !== null && sensorData.idx !== undefined && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded">
+                  <span className="font-semibold uppercase">Índice:</span> {sensorData.idx}
+                </span>
+              )}
+            </div>
+            {sensorData.topico && (
+              <p className="text-xs text-gray-400 mt-1">
+                Tópico: {sensorData.topico}
+              </p>
+            )}
           </div>
 
           {/* Grid de sensores */}
@@ -129,37 +146,54 @@ export default function RealtimeSensorDisplay() {
                 {sensorData.umidadeSolo}%
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Bruto: {sensorData.umidadeSoloBruto}
+                Bruto: {sensorData.umidadeSoloBruto ?? 'N/D'}
               </p>
             </div>
           </div>
 
-          {/* Status da Bomba */}
-          <div className={`p-4 rounded-lg border ${
-            sensorData.bombaAtiva 
-              ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300' 
-              : 'bg-gray-50 border-gray-300'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">
-                  {sensorData.bombaAtiva ? '🚿' : '⭕'}
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-600">Bomba d'água</p>
-                  <p className={`text-xl font-bold ${
-                    sensorData.bombaAtiva ? 'text-blue-600' : 'text-gray-500'
-                  }`}>
-                    {sensorData.statusBomba}
-                  </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Status da Bomba */}
+            <div className={`p-4 rounded-lg border ${
+              sensorData.bombaAtiva
+                ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300'
+                : 'bg-gray-50 border-gray-300'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">
+                    {sensorData.bombaAtiva ? '🚿' : '⭕'}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600">Bomba d'água</p>
+                    <p className={`text-xl font-bold ${
+                      sensorData.bombaAtiva ? 'text-blue-600' : 'text-gray-500'
+                    }`}>
+                      {sensorData.statusBomba}
+                    </p>
+                  </div>
+                </div>
+                <div className={`px-4 py-2 rounded-full font-semibold ${
+                  sensorData.bombaAtiva
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {sensorData.bombaAtiva ? 'ATIVA' : 'INATIVA'}
                 </div>
               </div>
-              <div className={`px-4 py-2 rounded-full font-semibold ${
-                sensorData.bombaAtiva 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'bg-gray-200 text-gray-600'
-              }`}>
-                {sensorData.bombaAtiva ? 'ATIVA' : 'INATIVA'}
+            </div>
+
+            {/* Status da Iluminação */}
+            <div className="p-4 rounded-lg border bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">💡</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600">Iluminação</p>
+                    <p className="text-xl font-bold text-yellow-600">
+                      {sensorData.statusLuz}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -1,124 +1,158 @@
-/**
- * Parser para processar dados históricos da mini estufa
- * 
- * Futuramente, este arquivo poderá ser adaptado para:
- * - Consumir dados de uma API em tempo real
- * - Gerenciar cache e histórico de leituras
- * - Implementar WebSocket para atualizações ao vivo
- */
+const numberOrZero = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
 
-/**
- * Processa uma linha do arquivo de log
- * Formato: miniEstufaFelipe/leituras {"data_hora": "...", "temperatura": ..., ...}
- */
-function parseLogLine(line) {
-  try {
-    // Separa o tópico MQTT do JSON
-    const parts = line.split(' ');
-    const jsonStr = parts.slice(1).join(' ');
-    const data = JSON.parse(jsonStr);
-    
-    return {
-      dataHora: data.data_hora,
-      temperatura: data.temperatura,
-      umidadeAr: data.umidade_ar,
-      luminosidade: data.luminosidade,
-      umidadeSolo: data.umidade_solo,
-      umidadeSoloBruto: data.umidade_solo_bruto,
-      statusBomba: data.status_bomba,
-    };
-  } catch (error) {
-    console.error('Erro ao parsear linha:', line, error);
+const toDate = (value) => {
+  if (!value) {
     return null;
   }
-}
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
 
-/**
- * Converte dados parseados para o formato do dashboard
- */
-function formatForDashboard(parsedData) {
-  // Extrai apenas hora e minuto da data
-  const [datePart, timePart] = parsedData.dataHora.split(' ');
-  const [hora, minuto] = timePart.split(':');
-  const timeLabel = `${hora}:${minuto}`;
-  
+const formatDate = (date) => {
+  if (!date) return '';
+  return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+};
+
+const formatTime = (date) => {
+  if (!date) return '';
+  return date.toLocaleTimeString('pt-BR', {
+    timeZone: 'UTC',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const formatDateTime = (date) => {
+  if (!date) return '';
+  const datePart = formatDate(date);
+  const timePart = date.toLocaleTimeString('pt-BR', {
+    timeZone: 'UTC',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  return `${datePart} ${timePart}`;
+};
+
+const includesKeyword = (value, keyword) => {
+  if (!value) return false;
+  return value.toLowerCase().includes(keyword.toLowerCase());
+};
+
+export function mapSupabaseRow(row) {
+  const timestamp = toDate(row.data_hora);
+  const dateLabel = formatDate(timestamp);
+  const timeLabel = formatTime(timestamp);
+
   return {
+    id: row.id ?? row.idx ?? row.data_hora,
+    idx: row.idx ?? null,
+    tipo: row.tipo ?? '',
+    topico: row.topico ?? '',
     t: timeLabel,
-    temp: parsedData.temperatura,
-    hum: parsedData.umidadeAr,
-    light: parsedData.luminosidade,
-    soil: parsedData.umidadeSolo,
-    bomba: parsedData.statusBomba === "Bomba ativada",
-    // Mantém dados extras para referência futura
-    _raw: {
-      dataHoraCompleta: parsedData.dataHora,
-      umidadeSoloBruto: parsedData.umidadeSoloBruto,
-    }
+    data: dateLabel,
+    dataCompleta: timestamp ? formatDateTime(timestamp) : row.data_hora ?? '',
+    dataHoraISO: row.data_hora ?? '',
+    temp: numberOrZero(row.temperatura),
+    hum: numberOrZero(row.umidade_ar),
+    light: numberOrZero(row.luminosidade),
+    soil: numberOrZero(row.umidade_solo),
+    bomba: includesKeyword(row.status_bomba, 'ativada'),
+    statusBomba: row.status_bomba ?? 'Status desconhecido',
+    statusLuz: row.status_luz ?? 'Status desconhecido',
+    umidadeSoloBruto: numberOrZero(row.umidade_solo_bruto ?? row.solo_bruto),
+    timestamp,
+    raw: row,
   };
 }
 
-/**
- * Processa todas as linhas do arquivo
- */
-export function parseDataFile(fileContent) {
-  const lines = fileContent.trim().split('\n');
-  const parsed = lines
-    .map(parseLogLine)
-    .filter(item => item !== null)
-    .map(formatForDashboard);
-  
-  return parsed;
+export function buildHistorySeries(rows) {
+  return rows
+    .map(mapSupabaseRow)
+    .filter((item) => item.timestamp !== null)
+    .sort((a, b) => a.timestamp - b.timestamp);
 }
 
-/**
- * Agrupa dados por hora (média dos valores)
- * Útil para reduzir a quantidade de pontos no gráfico
- */
-export function aggregateByHour(data) {
-  const grouped = {};
-  
-  data.forEach(item => {
-    const hour = item.t.split(':')[0];
-    if (!grouped[hour]) {
-      grouped[hour] = {
-        items: [],
-        t: `${hour}:00`
-      };
-    }
-    grouped[hour].items.push(item);
-  });
-  
-  return Object.values(grouped).map(group => {
-    const items = group.items;
-    const avg = (key) => items.reduce((sum, item) => sum + item[key], 0) / items.length;
-    
-    return {
-      t: group.t,
-      temp: Number(avg('temp').toFixed(1)),
-      hum: Number(avg('hum').toFixed(1)),
-      light: Number(avg('light').toFixed(0)),
-      soil: Number(avg('soil').toFixed(0)),
-      bomba: items.some(i => i.bomba), // Se bomba foi ativada em algum momento da hora
-    };
-  });
+export function calculateKpis(series) {
+  if (series.length === 0) {
+    return [];
+  }
+
+  const last = series[series.length - 1];
+  const prev = series[series.length - 2] ?? last;
+
+  const pct = (now, before) => {
+    if (before === 0) return 0;
+    return ((now - before) / before) * 100;
+  };
+
+  return [
+    { title: 'Temperatura', value: last.temp.toFixed(1), unit: '°C', delta: pct(last.temp, prev.temp) },
+    { title: 'Umidade do Ar', value: last.hum.toFixed(1), unit: '%', delta: pct(last.hum, prev.hum) },
+    { title: 'Luminosidade', value: last.light.toFixed(0), unit: '%', delta: pct(last.light, prev.light) },
+    { title: 'Umidade do Solo', value: last.soil.toFixed(0), unit: '%', delta: pct(last.soil, prev.soil) },
+  ];
 }
 
-/**
- * Filtra dados por intervalo de datas
- * Preparado para futura implementação de filtros de período
- */
-export function filterByDateRange(data, startDate, endDate) {
-  return data.filter(item => {
-    const itemDate = new Date(item._raw?.dataHoraCompleta || '2025-01-01');
-    return itemDate >= startDate && itemDate <= endDate;
+export function buildTimeRangeLabel(series) {
+  if (series.length === 0) {
+    return 'Sem leituras cadastradas';
+  }
+
+  const first = series[0];
+  const last = series[series.length - 1];
+
+  if (!first.timestamp || !last.timestamp) {
+    return `Total de ${series.length} leituras`;
+  }
+
+  const start = first.timestamp.toLocaleString('pt-BR', {
+    timeZone: 'UTC',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
+
+  const end = last.timestamp.toLocaleString('pt-BR', {
+    timeZone: 'UTC',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return `${start} → ${end} • ${series.length} leituras`;
 }
 
-/**
- * Pega os últimos N registros
- * Útil para mostrar apenas dados recentes
- */
-export function getLastNReadings(data, n = 24) {
-  return data.slice(-n);
+export function normalizeRealtimePayload(payload) {
+  if (!payload) {
+    return null;
+  }
+
+  const timestamp = toDate(payload.data_hora);
+  const formattedDateTime = timestamp ? formatDateTime(timestamp) : payload.data_hora ?? '';
+
+  return {
+    dataHora: formattedDateTime,
+    dataHoraISO: payload.data_hora ?? '',
+    timestamp,
+    idx: payload.idx ?? payload.id ?? null,
+    temperatura: numberOrZero(payload.temperatura),
+    umidadeAr: numberOrZero(payload.umidade_ar),
+    luminosidade: numberOrZero(payload.luminosidade),
+    umidadeSolo: numberOrZero(payload.umidade_solo),
+    umidadeSoloBruto: payload.umidade_solo_bruto ?? payload.solo_bruto ?? null,
+    statusBomba: payload.status_bomba ?? 'Status desconhecido',
+    bombaAtiva: includesKeyword(payload.status_bomba, 'ativada'),
+    statusLuz: payload.status_luz ?? 'Status desconhecido',
+    topico: payload.topico ?? '',
+    tipo: payload.tipo ?? '',
+  };
 }
 
