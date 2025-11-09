@@ -132,6 +132,23 @@ Este dashboard requer um servidor backend WebSocket. Consulte o repositório do 
 }
 ```
 
+## 🚀 Deploy
+
+### Render (Static Site)
+
+O repositório inclui um `render.yaml` com a configuração padrão. Antes do primeiro deploy:
+
+1. No painel da Render, crie dois *Secrets*:
+   - `SUPABASE_URL` → `https://itvftowtidgxrjgwpsjp.supabase.co`
+   - `SUPABASE_ANON_KEY` → `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+2. Se quiser alterar o nome da tabela, edite `VITE_SUPABASE_HISTORY_TABLE` diretamente no `render.yaml`.
+3. A Render injeta os secrets como variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` em tempo de build e publica o diretório `dist`.
+4. Sempre que mudar as variáveis, clique em “Clear build cache & deploy” para reconstruir o bundle com os valores corretos.
+
+### Outras plataformas
+
+Em qualquer serviço de hospedagem, configure as mesmas variáveis (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_SUPABASE_HISTORY_TABLE`) antes de rodar `npm run build`. Lembre-se de que o Vite lê essas variáveis no momento da compilação; após qualquer alteração, execute um novo build/deploy.
+
 ## 🎨 Tecnologias
 
 - **React 18** - Biblioteca de UI
