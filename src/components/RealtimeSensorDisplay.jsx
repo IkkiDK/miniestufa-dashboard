@@ -156,7 +156,7 @@ export default function RealtimeSensorDisplay() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Status da Bomba */}
             <div className={`p-4 rounded-lg border transition ${
               sensorData.bombaAtiva
@@ -186,41 +186,33 @@ export default function RealtimeSensorDisplay() {
             </div>
 
             {/* Status da Iluminação */}
-            <div className="p-4 rounded-lg border bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200">
+            <div className={`p-4 rounded-lg border transition ${
+              sensorData.luzLigada
+                ? 'bg-gradient-to-r from-yellow-50 to-amber-100 border-amber-200 shadow-sm'
+                : 'bg-white border-gray-200'
+            }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">💡</span>
+                  <span className="text-3xl">{sensorData.luzLigada ? '💡' : '💤'}</span>
                   <div>
                     <p className="text-sm font-semibold text-gray-600">Iluminação</p>
-                    <p className="text-xl font-bold text-yellow-600">
+                    <p className="text-xs text-gray-500 mt-0.5">
                       {sensorData.statusLuz}
                     </p>
                   </div>
+                </div>
+                <div className={`px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wide ${
+                  sensorData.luzLigada
+                    ? 'bg-amber-100 border border-amber-200 text-amber-700'
+                    : 'bg-slate-100 border border-slate-200 text-slate-500'
+                }`}>
+                  {sensorData.luzLigada ? 'Ligada' : 'Desligada'}
                 </div>
               </div>
             </div>
 
             {/* Informações adicionais */}
-            <div className="p-4 rounded-lg border bg-white border-gray-200">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Tópico MQTT</p>
-              <p className="text-sm font-mono text-gray-700 break-all">
-                {sensorData.topico || 'N/D'}
-              </p>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-500">
-                <div>
-                  <span className="block uppercase tracking-wide">Tipo</span>
-                  <span className="text-sm text-gray-700 font-semibold">
-                    {sensorData.tipo || 'N/D'}
-                  </span>
-                </div>
-                <div>
-                  <span className="block uppercase tracking-wide">Índice</span>
-                  <span className="text-sm text-gray-700 font-semibold">
-                    {sensorData.idx ?? 'N/D'}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <div />
           </div>
         </div>
       ) : (

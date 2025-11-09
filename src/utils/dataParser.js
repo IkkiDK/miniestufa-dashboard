@@ -39,15 +39,25 @@ const formatDateTime = (date) => {
 
 const isActiveStatus = (value) => {
   if (!value) return false;
-  const normalized = value.toString().toLowerCase();
+  const normalized = value.toString().trim().toLowerCase();
 
-  const negativeHints = ['desativ', 'deslig', 'off', '0', 'false', 'inativa'];
-  if (negativeHints.some((hint) => normalized.includes(hint))) {
+  if (normalized === '1' || normalized === 'true' || normalized === 'on') {
+    return true;
+  }
+
+  if (normalized === '0' || normalized === 'false' || normalized === 'off') {
     return false;
   }
 
-  const positiveHints = ['ativ', 'lig', 'on', '1', 'true'];
-  if (positiveHints.some((hint) => normalized.includes(hint))) {
+  if (
+    normalized.includes('desativ') ||
+    normalized.includes('deslig') ||
+    normalized.includes('inativ')
+  ) {
+    return false;
+  }
+
+  if (normalized.includes('ativ') || normalized.includes('lig')) {
     return true;
   }
 
@@ -59,8 +69,14 @@ export function mapSupabaseRow(row) {
   const dateLabel = formatDate(timestamp);
   const timeLabel = formatTime(timestamp);
 
-  const bombaAtiva = isActiveStatus(row.status_bomba);
-  const luzLigada = isActiveStatus(row.status_luz);
+  const statusBombaOriginal = row.status_bomba ?? '';
+  const statusLuzOriginal = row.status_luz ?? '';
+
+  const bombaAtiva = isActiveStatus(statusBombaOriginal);
+  const luzLigada = isActiveStatus(statusLuzOriginal);
+
+  const statusBombaLabel = bombaAtiva ? "Bomba ativada" : "Bomba desativada";
+  const statusLuzLabel = luzLigada ? "Luz ligada" : "Luz desligada";
 
   return {
     id: row.id ?? row.idx ?? row.data_hora,
@@ -78,8 +94,8 @@ export function mapSupabaseRow(row) {
     soilRaw: numberOrZero(row.umidade_solo_bruto ?? row.solo_bruto),
     bomba: bombaAtiva,
     luz: luzLigada,
-    statusBomba: row.status_bomba ?? 'Status desconhecido',
-    statusLuz: row.status_luz ?? 'Status desconhecido',
+    statusBomba: statusBombaOriginal || statusBombaLabel,
+    statusLuz: statusLuzOriginal || statusLuzLabel,
     umidadeSoloBruto: numberOrZero(row.umidade_solo_bruto ?? row.solo_bruto),
     timestamp,
     raw: row,
@@ -155,6 +171,15 @@ export function normalizeRealtimePayload(payload) {
   const timestamp = toDate(payload.data_hora);
   const formattedDateTime = timestamp ? formatDateTime(timestamp) : payload.data_hora ?? '';
 
+  const statusBombaOriginal = payload.status_bomba ?? '';
+  const statusLuzOriginal = payload.status_luz ?? '';
+
+  const bombaAtiva = isActiveStatus(statusBombaOriginal);
+  const luzLigada = isActiveStatus(statusLuzOriginal);
+
+  const statusBombaLabel = bombaAtiva ? "Bomba ativada" : "Bomba desativada";
+  const statusLuzLabel = luzLigada ? "Luz ligada" : "Luz desligada";
+
   return {
     dataHora: formattedDateTime,
     dataHoraISO: payload.data_hora ?? '',
@@ -165,10 +190,10 @@ export function normalizeRealtimePayload(payload) {
     luminosidade: numberOrZero(payload.luminosidade),
     umidadeSolo: numberOrZero(payload.umidade_solo),
     umidadeSoloBruto: payload.umidade_solo_bruto ?? payload.solo_bruto ?? null,
-    statusBomba: payload.status_bomba ?? 'Status desconhecido',
-    bombaAtiva: isActiveStatus(payload.status_bomba),
-    statusLuz: payload.status_luz ?? 'Status desconhecido',
-    luzLigada: isActiveStatus(payload.status_luz),
+    statusBomba: statusBombaOriginal || statusBombaLabel,
+    bombaAtiva,
+    statusLuz: statusLuzOriginal || statusLuzLabel,
+    luzLigada,
     topico: payload.topico ?? '',
     tipo: payload.tipo ?? '',
   };

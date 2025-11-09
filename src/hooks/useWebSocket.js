@@ -204,6 +204,7 @@ export function useMiniEstufa(options = {}) {
     umidadeSolo: sensorData?.umidadeSolo,
     bombaAtiva: sensorData?.bombaAtiva,
     statusLuz: sensorData?.statusLuz,
+    luzLigada: sensorData?.luzLigada,
   };
 }
 
