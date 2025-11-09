@@ -3,23 +3,50 @@ const numberOrZero = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const LOCALE_TIMEZONE = 'America/Sao_Paulo';
+const BR_DATE_TIME_REGEX = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/;
+
 const toDate = (value) => {
   if (!value) {
     return null;
   }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    const matches = trimmed.match(BR_DATE_TIME_REGEX);
+
+    if (matches) {
+      const [, dd, mm, yyyy, hh, min, ss] = matches;
+      const date = new Date(
+        Number(yyyy),
+        Number(mm) - 1,
+        Number(dd),
+        Number(hh),
+        Number(min),
+        Number(ss ?? 0),
+        0,
+      );
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+  }
+
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
 const formatDate = (date) => {
   if (!date) return '';
-  return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  return date.toLocaleDateString('pt-BR', { timeZone: LOCALE_TIMEZONE });
 };
 
 const formatTime = (date) => {
   if (!date) return '';
   return date.toLocaleTimeString('pt-BR', {
-    timeZone: 'UTC',
+    timeZone: LOCALE_TIMEZONE,
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -29,7 +56,7 @@ const formatDateTime = (date) => {
   if (!date) return '';
   const datePart = formatDate(date);
   const timePart = date.toLocaleTimeString('pt-BR', {
-    timeZone: 'UTC',
+    timeZone: LOCALE_TIMEZONE,
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
@@ -143,7 +170,7 @@ export function buildTimeRangeLabel(series) {
   }
 
   const start = first.timestamp.toLocaleString('pt-BR', {
-    timeZone: 'UTC',
+    timeZone: LOCALE_TIMEZONE,
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -152,7 +179,7 @@ export function buildTimeRangeLabel(series) {
   });
 
   const end = last.timestamp.toLocaleString('pt-BR', {
-    timeZone: 'UTC',
+    timeZone: LOCALE_TIMEZONE,
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
