@@ -7,13 +7,49 @@ import {
   calculateKpis,
 } from '../utils/dataParser';
 
-const toIsoString = (value) => {
+const TIMEZONE = 'America/Sao_Paulo';
+
+const pad = (value) => value.toString().padStart(2, '0');
+
+const toDateObject = (value) => {
   if (!value) return null;
   if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+    return Number.isNaN(value.getTime()) ? null : value;
   }
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatTimestampForSupabase = (value) => {
+  const date = toDateObject(value);
+  if (!date) return null;
+
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+
+  const parts = formatter.formatToParts(date).reduce((acc, part) => {
+    if (part.type !== 'literal') {
+      acc[part.type] = part.value;
+    }
+    return acc;
+  }, {});
+
+  const year = parts.year ?? '0000';
+  const month = pad(Number.parseInt(parts.month ?? '1', 10));
+  const day = pad(Number.parseInt(parts.day ?? '1', 10));
+  const hour = pad(Number.parseInt(parts.hour ?? '0', 10));
+  const minute = pad(Number.parseInt(parts.minute ?? '0', 10));
+  const second = pad(Number.parseInt(parts.second ?? '0', 10));
+
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 };
 
 export function useSupabaseHistory(options = {}) {
@@ -45,15 +81,15 @@ export function useSupabaseHistory(options = {}) {
         .from(table)
         .select('*');
 
-      const startIso = toIsoString(startDate);
-      const endIso = toIsoString(endDate);
+      const startFilter = formatTimestampForSupabase(startDate);
+      const endFilter = formatTimestampForSupabase(endDate);
 
-      if (startIso) {
-        query = query.gte('data_hora', startIso);
+      if (startFilter) {
+        query = query.gte('data_hora', startFilter);
       }
 
-      if (endIso) {
-        query = query.lte('data_hora', endIso);
+      if (endFilter) {
+        query = query.lte('data_hora', endFilter);
       }
 
       query = query.order('data_hora', { ascending: true });

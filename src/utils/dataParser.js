@@ -5,6 +5,58 @@ const numberOrZero = (value) => {
 
 const LOCALE_TIMEZONE = 'America/Sao_Paulo';
 const BR_DATE_TIME_REGEX = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/;
+const ISO_LOCAL_REGEX = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/;
+
+const toNumber = (value) => Number.parseInt(value, 10);
+
+const getTimeZoneOffsetMs = (timeZone, date) => {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+
+  const parts = dtf.formatToParts(date);
+  const lookup = parts.reduce((acc, part) => {
+    if (part.type !== 'literal') {
+      acc[part.type] = toNumber(part.value);
+    }
+    return acc;
+  }, {});
+
+  const asUtc = Date.UTC(
+    lookup.year ?? 0,
+    (lookup.month ?? 1) - 1,
+    lookup.day ?? 1,
+    lookup.hour ?? 0,
+    lookup.minute ?? 0,
+    lookup.second ?? 0,
+  );
+
+  return asUtc - date.getTime();
+};
+
+const buildZonedDate = (components) => {
+  const {
+    year, month, day, hour, minute, second = 0,
+  } = components;
+
+  if (
+    Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)
+    || Number.isNaN(hour) || Number.isNaN(minute) || Number.isNaN(second)
+  ) {
+    return null;
+  }
+
+  const baseUtc = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  const offset = getTimeZoneOffsetMs(LOCALE_TIMEZONE, baseUtc);
+  return new Date(baseUtc.getTime() - offset);
+};
 
 const toDate = (value) => {
   if (!value) {
@@ -17,25 +69,46 @@ const toDate = (value) => {
 
   if (typeof value === 'string') {
     const trimmed = value.trim();
-    const matches = trimmed.match(BR_DATE_TIME_REGEX);
+    const brMatches = trimmed.match(BR_DATE_TIME_REGEX);
+    if (brMatches) {
+      const [, dd, mm, yyyy, hh, min, ss] = brMatches;
+      return buildZonedDate({
+        year: toNumber(yyyy),
+        month: toNumber(mm),
+        day: toNumber(dd),
+        hour: toNumber(hh),
+        minute: toNumber(min),
+        second: ss ? toNumber(ss) : 0,
+      });
+    }
 
-    if (matches) {
-      const [, dd, mm, yyyy, hh, min, ss] = matches;
-      const date = new Date(
-        Number(yyyy),
-        Number(mm) - 1,
-        Number(dd),
-        Number(hh),
-        Number(min),
-        Number(ss ?? 0),
-        0,
-      );
-      return Number.isNaN(date.getTime()) ? null : date;
+    const isoMatches = trimmed.match(ISO_LOCAL_REGEX);
+    if (isoMatches) {
+      const [, yyyy, mm, dd, hh, min, ss] = isoMatches;
+      return buildZonedDate({
+        year: toNumber(yyyy),
+        month: toNumber(mm),
+        day: toNumber(dd),
+        hour: toNumber(hh),
+        minute: toNumber(min),
+        second: ss ? toNumber(ss) : 0,
+      });
     }
   }
 
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return buildZonedDate({
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+    hour: date.getUTCHours(),
+    minute: date.getUTCMinutes(),
+    second: date.getUTCSeconds(),
+  });
 };
 
 const formatDate = (date) => {
