@@ -101,8 +101,8 @@ export default function RealtimeSensorDisplay() {
             )}
           </div>
 
-          {/* Grid de sensores */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Valores principais */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Temperatura */}
             <div className="p-4 bg-gradient-to-br from-red-50 to-orange-50 rounded-lg border border-red-200">
               <div className="flex items-center gap-2 mb-2">
@@ -138,46 +138,49 @@ export default function RealtimeSensorDisplay() {
 
             {/* Umidade do Solo */}
             <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">🌱</span>
-                <p className="text-sm font-semibold text-gray-600">Umidade do Solo</p>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">🌱</span>
+                  <p className="text-sm font-semibold text-gray-600">Umidade do Solo</p>
+                </div>
+                <span className="text-[11px] uppercase tracking-wide text-green-700 font-semibold bg-green-100 px-2 py-0.5 rounded-full">
+                  {sensorData.umidadeSoloBruto ?? 'N/D'}
+                </span>
               </div>
               <p className="text-3xl font-bold text-green-600">
                 {sensorData.umidadeSolo}%
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Bruto: {sensorData.umidadeSoloBruto ?? 'N/D'}
+              <p className="text-xs text-green-700 mt-1 font-medium">
+                Valor bruto (ADC): {sensorData.umidadeSoloBruto ?? 'N/D'}
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Status da Bomba */}
-            <div className={`p-4 rounded-lg border ${
+            <div className={`p-4 rounded-lg border transition ${
               sensorData.bombaAtiva
-                ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300'
-                : 'bg-gray-50 border-gray-300'
+                ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300 shadow-sm'
+                : 'bg-white border-gray-200'
             }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">
-                    {sensorData.bombaAtiva ? '🚿' : '⭕'}
+                  <span className={`text-3xl ${sensorData.bombaAtiva ? 'animate-pulse' : ''}`}>
+                    {sensorData.bombaAtiva ? '🚿' : '💧'}
                   </span>
                   <div>
                     <p className="text-sm font-semibold text-gray-600">Bomba d'água</p>
-                    <p className={`text-xl font-bold ${
-                      sensorData.bombaAtiva ? 'text-blue-600' : 'text-gray-500'
-                    }`}>
+                    <p className="text-xs text-gray-500 mt-0.5">
                       {sensorData.statusBomba}
                     </p>
                   </div>
                 </div>
-                <div className={`px-4 py-2 rounded-full font-semibold ${
+                <div className={`px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wide ${
                   sensorData.bombaAtiva
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-gray-200 text-gray-600'
+                    ? 'bg-blue-100 border border-blue-200 text-blue-700'
+                    : 'bg-slate-100 border border-slate-200 text-slate-500'
                 }`}>
-                  {sensorData.bombaAtiva ? 'ATIVA' : 'INATIVA'}
+                  {sensorData.bombaAtiva ? 'Ativa' : 'Desativada'}
                 </div>
               </div>
             </div>
@@ -193,6 +196,28 @@ export default function RealtimeSensorDisplay() {
                       {sensorData.statusLuz}
                     </p>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Informações adicionais */}
+            <div className="p-4 rounded-lg border bg-white border-gray-200">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Tópico MQTT</p>
+              <p className="text-sm font-mono text-gray-700 break-all">
+                {sensorData.topico || 'N/D'}
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-500">
+                <div>
+                  <span className="block uppercase tracking-wide">Tipo</span>
+                  <span className="text-sm text-gray-700 font-semibold">
+                    {sensorData.tipo || 'N/D'}
+                  </span>
+                </div>
+                <div>
+                  <span className="block uppercase tracking-wide">Índice</span>
+                  <span className="text-sm text-gray-700 font-semibold">
+                    {sensorData.idx ?? 'N/D'}
+                  </span>
                 </div>
               </div>
             </div>

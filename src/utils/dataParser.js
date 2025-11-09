@@ -37,15 +37,30 @@ const formatDateTime = (date) => {
   return `${datePart} ${timePart}`;
 };
 
-const includesKeyword = (value, keyword) => {
+const isActiveStatus = (value) => {
   if (!value) return false;
-  return value.toLowerCase().includes(keyword.toLowerCase());
+  const normalized = value.toString().toLowerCase();
+
+  const negativeHints = ['desativ', 'deslig', 'off', '0', 'false', 'inativa'];
+  if (negativeHints.some((hint) => normalized.includes(hint))) {
+    return false;
+  }
+
+  const positiveHints = ['ativ', 'lig', 'on', '1', 'true'];
+  if (positiveHints.some((hint) => normalized.includes(hint))) {
+    return true;
+  }
+
+  return false;
 };
 
 export function mapSupabaseRow(row) {
   const timestamp = toDate(row.data_hora);
   const dateLabel = formatDate(timestamp);
   const timeLabel = formatTime(timestamp);
+
+  const bombaAtiva = isActiveStatus(row.status_bomba);
+  const luzLigada = isActiveStatus(row.status_luz);
 
   return {
     id: row.id ?? row.idx ?? row.data_hora,
@@ -60,7 +75,9 @@ export function mapSupabaseRow(row) {
     hum: numberOrZero(row.umidade_ar),
     light: numberOrZero(row.luminosidade),
     soil: numberOrZero(row.umidade_solo),
-    bomba: includesKeyword(row.status_bomba, 'ativada'),
+    soilRaw: numberOrZero(row.umidade_solo_bruto ?? row.solo_bruto),
+    bomba: bombaAtiva,
+    luz: luzLigada,
     statusBomba: row.status_bomba ?? 'Status desconhecido',
     statusLuz: row.status_luz ?? 'Status desconhecido',
     umidadeSoloBruto: numberOrZero(row.umidade_solo_bruto ?? row.solo_bruto),
@@ -149,8 +166,9 @@ export function normalizeRealtimePayload(payload) {
     umidadeSolo: numberOrZero(payload.umidade_solo),
     umidadeSoloBruto: payload.umidade_solo_bruto ?? payload.solo_bruto ?? null,
     statusBomba: payload.status_bomba ?? 'Status desconhecido',
-    bombaAtiva: includesKeyword(payload.status_bomba, 'ativada'),
+    bombaAtiva: isActiveStatus(payload.status_bomba),
     statusLuz: payload.status_luz ?? 'Status desconhecido',
+    luzLigada: isActiveStatus(payload.status_luz),
     topico: payload.topico ?? '',
     tipo: payload.tipo ?? '',
   };

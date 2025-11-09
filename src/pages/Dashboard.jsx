@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import ChartPanel from "../components/ChartPanel";
@@ -11,18 +11,10 @@ const formatDateInputValue = (date) => {
   return local.toISOString().slice(0, 16);
 };
 
-const getLast24hRange = () => {
-  const now = new Date();
-  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  return {
-    start: formatDateInputValue(dayAgo),
-    end: formatDateInputValue(now),
-  };
-};
-
 export default function Dashboard(){
-  const [dateInputs, setDateInputs] = useState(() => getLast24hRange());
-  const [dateFilter, setDateFilter] = useState(() => getLast24hRange());
+  const [dateInputs, setDateInputs] = useState({ start: "", end: "" });
+  const [dateFilter, setDateFilter] = useState({ start: "", end: "" });
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
 
   const startDate = useMemo(() => (dateFilter.start ? new Date(dateFilter.start) : null), [dateFilter.start]);
   const endDate = useMemo(() => (dateFilter.end ? new Date(dateFilter.end) : null), [dateFilter.end]);
@@ -43,6 +35,29 @@ export default function Dashboard(){
     [dateInputs, dateFilter],
   );
 
+  useEffect(() => {
+    if (filtersInitialized || series.length === 0) {
+      return;
+    }
+
+    const last = series.at(-1)?.timestamp;
+    const first = series[0]?.timestamp;
+
+    if (!last) {
+      return;
+    }
+
+    const end = formatDateInputValue(last);
+    const dayAgo = new Date(last.getTime() - 24 * 60 * 60 * 1000);
+    const startCandidate = first && dayAgo < first ? first : dayAgo;
+    const start = formatDateInputValue(startCandidate);
+
+    const defaultRange = { start, end };
+    setDateInputs(defaultRange);
+    setDateFilter(defaultRange);
+    setFiltersInitialized(true);
+  }, [series, filtersInitialized]);
+
   const handleDateChange = useCallback((field) => (event) => {
     setDateInputs((prev) => ({
       ...prev,
@@ -55,10 +70,32 @@ export default function Dashboard(){
   }, [dateInputs]);
 
   const handleClearFilters = useCallback(() => {
-    const defaultRange = getLast24hRange();
+    if (series.length === 0) {
+      const empty = { start: "", end: "" };
+      setDateInputs(empty);
+      setDateFilter(empty);
+      return;
+    }
+
+    const last = series.at(-1)?.timestamp;
+    const first = series[0]?.timestamp;
+
+    if (!last) {
+      const empty = { start: "", end: "" };
+      setDateInputs(empty);
+      setDateFilter(empty);
+      return;
+    }
+
+    const end = formatDateInputValue(last);
+    const dayAgo = new Date(last.getTime() - 24 * 60 * 60 * 1000);
+    const startCandidate = first && dayAgo < first ? first : dayAgo;
+    const start = formatDateInputValue(startCandidate);
+
+    const defaultRange = { start, end };
     setDateInputs(defaultRange);
     setDateFilter(defaultRange);
-  }, []);
+  }, [series]);
 
   return (
     <div className="min-h-screen flex">

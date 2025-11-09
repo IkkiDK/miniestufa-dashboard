@@ -5,10 +5,7 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
-      - key: VITE_SUPABASE_URL
-        fromSecret: SUPABASE_URL
-      - key: VITE_SUPABASE_ANON_KEY
-        fromSecret: SUPABASE_ANON_KEY
+      - fromGroup: mini-estufa-shared
       - key: VITE_SUPABASE_HISTORY_TABLE
         value: leituras_formatadas
 

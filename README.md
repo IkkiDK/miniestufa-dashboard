@@ -134,16 +134,16 @@ Este dashboard requer um servidor backend WebSocket. Consulte o repositório do 
 
 ## 🚀 Deploy
 
-### Render (Static Site)
+### Render (Static Site + Env Group)
 
-O repositório inclui um `render.yaml` com a configuração padrão. Antes do primeiro deploy:
+O repositório inclui um `render.yaml` com a configuração padrão. Para compartilhar as variáveis entre backend e frontend:
 
-1. No painel da Render, crie dois *Secrets*:
+1. No painel da Render, crie um **Environment Group** chamado `mini-estufa-shared` contendo:
    - `SUPABASE_URL` → `https://itvftowtidgxrjgwpsjp.supabase.co`
    - `SUPABASE_ANON_KEY` → `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
-2. Se quiser alterar o nome da tabela, edite `VITE_SUPABASE_HISTORY_TABLE` diretamente no `render.yaml`.
-3. A Render injeta os secrets como variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` em tempo de build e publica o diretório `dist`.
-4. Sempre que mudar as variáveis, clique em “Clear build cache & deploy” para reconstruir o bundle com os valores corretos.
+2. Associe esse grupo tanto ao backend (`miniestufa-backend`) quanto ao serviço estático do dashboard.
+3. O `render.yaml` já aponta o static site para esse grupo (`fromGroup: mini-estufa-shared`), além de definir `VITE_SUPABASE_HISTORY_TABLE`.
+4. Após alterar qualquer valor, execute “Clear build cache & deploy” no serviço estático para que o Vite reconstrua o bundle com as novas variáveis.
 
 ### Outras plataformas
 
