@@ -1,11 +1,36 @@
+const normalizeNumericValue = (value, decimals = 0) => {
+  if (value === null || value === undefined) {
+    return { value: null, display: NO_DATA_LABEL };
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return { value: null, display: NO_DATA_LABEL };
+  }
+
+  return {
+    value: parsed,
+    display: parsed.toFixed(decimals),
+  };
+};
+
 const numberOrZero = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const NO_DATA_LABEL = 'dado não recebido';
+
 const LOCALE_TIMEZONE = 'America/Sao_Paulo';
 const BR_DATE_TIME_REGEX = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/;
 const ISO_LOCAL_REGEX = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/;
+
+const isNoDataLabel = (value) => {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  return value.trim().toLowerCase() === NO_DATA_LABEL;
+};
 
 const toNumber = (value) => Number.parseInt(value, 10);
 
@@ -172,21 +197,36 @@ export function mapSupabaseRow(row) {
   const statusBombaOriginal = row.status_bomba ?? '';
   const statusLuzOriginal = row.status_luz ?? '';
 
-  const bombaAtiva = isActiveStatus(statusBombaOriginal);
-  const luzLigada = isActiveStatus(statusLuzOriginal);
+  const bombaStatusProvided = typeof statusBombaOriginal === 'string'
+    && statusBombaOriginal.trim() !== ''
+    && !isNoDataLabel(statusBombaOriginal);
+  const luzStatusProvided = typeof statusLuzOriginal === 'string'
+    && statusLuzOriginal.trim() !== ''
+    && !isNoDataLabel(statusLuzOriginal);
 
-  const statusBombaLabel = bombaAtiva ? "Bomba ativada" : "Bomba desativada";
-  const statusLuzLabel = luzLigada ? "Luz ligada" : "Luz desligada";
+  const bombaAtiva = bombaStatusProvided ? isActiveStatus(statusBombaOriginal) : null;
+  const luzLigada = luzStatusProvided ? isActiveStatus(statusLuzOriginal) : null;
+
+  const statusBombaText = bombaStatusProvided
+    ? (bombaAtiva ? "Bomba ativada" : "Bomba desativada")
+    : NO_DATA_LABEL;
+
+  const statusLuzText = luzStatusProvided
+    ? (luzLigada ? "Luz ligada" : "Luz desligada")
+    : NO_DATA_LABEL;
+
+  const dataHoraOriginal = row.data_hora ?? '';
+  const dataCompleta = timestamp ? formatDateTime(timestamp) : (dataHoraOriginal || NO_DATA_LABEL);
 
   return {
     id: row.id ?? row.idx ?? row.data_hora,
     idx: row.idx ?? null,
-    tipo: row.tipo ?? '',
+    tipo: row.tipo ?? NO_DATA_LABEL,
     topico: row.topico ?? '',
     t: timeLabel,
     data: dateLabel,
-    dataCompleta: timestamp ? formatDateTime(timestamp) : row.data_hora ?? '',
-    dataHoraISO: row.data_hora ?? '',
+    dataCompleta,
+    dataHoraISO: dataHoraOriginal,
     temp: numberOrZero(row.temperatura),
     hum: numberOrZero(row.umidade_ar),
     light: numberOrZero(row.luminosidade),
@@ -194,8 +234,8 @@ export function mapSupabaseRow(row) {
     soilRaw: numberOrZero(row.umidade_solo_bruto ?? row.solo_bruto),
     bomba: bombaAtiva,
     luz: luzLigada,
-    statusBomba: statusBombaOriginal || statusBombaLabel,
-    statusLuz: statusLuzOriginal || statusLuzLabel,
+    statusBomba: statusBombaText,
+    statusLuz: statusLuzText,
     umidadeSoloBruto: numberOrZero(row.umidade_solo_bruto ?? row.solo_bruto),
     timestamp,
     raw: row,
@@ -271,31 +311,54 @@ export function normalizeRealtimePayload(payload) {
   const timestamp = toDate(payload.data_hora);
   const formattedDateTime = timestamp ? formatDateTime(timestamp) : payload.data_hora ?? '';
 
+  const temperatura = normalizeNumericValue(payload.temperatura, 1);
+  const umidadeAr = normalizeNumericValue(payload.umidade_ar, 1);
+  const luminosidade = normalizeNumericValue(payload.luminosidade, 0);
+  const umidadeSolo = normalizeNumericValue(payload.umidade_solo, 0);
+  const umidadeSoloBruto = normalizeNumericValue(
+    payload.umidade_solo_bruto ?? payload.solo_bruto,
+    0,
+  );
+
   const statusBombaOriginal = payload.status_bomba ?? '';
+  const hasBombaStatus = typeof statusBombaOriginal === 'string'
+    && statusBombaOriginal.trim() !== ''
+    && !isNoDataLabel(statusBombaOriginal);
+  const bombaAtiva = hasBombaStatus ? isActiveStatus(statusBombaOriginal) : null;
+  const statusBombaText = hasBombaStatus
+    ? (bombaAtiva ? "Bomba ativada" : "Bomba desativada")
+    : NO_DATA_LABEL;
+
   const statusLuzOriginal = payload.status_luz ?? '';
-
-  const bombaAtiva = isActiveStatus(statusBombaOriginal);
-  const luzLigada = isActiveStatus(statusLuzOriginal);
-
-  const statusBombaLabel = bombaAtiva ? "Bomba ativada" : "Bomba desativada";
-  const statusLuzLabel = luzLigada ? "Luz ligada" : "Luz desligada";
+  const hasLuzStatus = typeof statusLuzOriginal === 'string'
+    && statusLuzOriginal.trim() !== ''
+    && !isNoDataLabel(statusLuzOriginal);
+  const luzLigada = hasLuzStatus ? isActiveStatus(statusLuzOriginal) : null;
+  const statusLuzText = hasLuzStatus
+    ? (luzLigada ? "Luz ligada" : "Luz desligada")
+    : NO_DATA_LABEL;
 
   return {
-    dataHora: formattedDateTime,
+    dataHora: formattedDateTime || NO_DATA_LABEL,
     dataHoraISO: payload.data_hora ?? '',
     timestamp,
     idx: payload.idx ?? payload.id ?? null,
-    temperatura: numberOrZero(payload.temperatura),
-    umidadeAr: numberOrZero(payload.umidade_ar),
-    luminosidade: numberOrZero(payload.luminosidade),
-    umidadeSolo: numberOrZero(payload.umidade_solo),
-    umidadeSoloBruto: payload.umidade_solo_bruto ?? payload.solo_bruto ?? null,
-    statusBomba: statusBombaOriginal || statusBombaLabel,
+    tipo: payload.tipo ?? NO_DATA_LABEL,
+    temperatura: temperatura.value,
+    temperaturaDisplay: temperatura.display,
+    umidadeAr: umidadeAr.value,
+    umidadeArDisplay: umidadeAr.display,
+    luminosidade: luminosidade.value,
+    luminosidadeDisplay: luminosidade.display,
+    umidadeSolo: umidadeSolo.value,
+    umidadeSoloDisplay: umidadeSolo.display,
+    umidadeSoloBruto: umidadeSoloBruto.value,
+    umidadeSoloBrutoDisplay: umidadeSoloBruto.display,
+    statusBomba: statusBombaText,
     bombaAtiva,
-    statusLuz: statusLuzOriginal || statusLuzLabel,
+    statusLuz: statusLuzText,
     luzLigada,
     topico: payload.topico ?? '',
-    tipo: payload.tipo ?? '',
   };
 }
 

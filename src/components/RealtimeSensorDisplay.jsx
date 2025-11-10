@@ -1,6 +1,25 @@
 import { useMiniEstufa } from '../hooks/useWebSocket';
 import config from '../config';
 
+const NO_DATA_LABEL = 'dado não recebido';
+
+const renderMetricValue = (display, suffix = '') => {
+  if (!display || display === NO_DATA_LABEL) {
+    return NO_DATA_LABEL;
+  }
+
+  return `${display}${suffix}`;
+};
+
+const metricCardClass = (baseClasses, hasData) => {
+  if (hasData) {
+    return baseClasses;
+  }
+  return `${baseClasses} opacity-50 border-dashed`;
+};
+
+const renderMetricIcon = (icon, hasData) => (hasData ? icon : '❔');
+
 /**
  * Componente de exemplo mostrando como usar dados em tempo real da API
  * 
@@ -41,6 +60,12 @@ export default function RealtimeSensorDisplay() {
     }
   };
 
+  const bombaSemDados = sensorData?.bombaAtiva === null || sensorData?.statusBomba === NO_DATA_LABEL;
+  const bombaAtiva = sensorData?.bombaAtiva === true;
+
+  const luzSemDados = sensorData?.luzLigada === null || sensorData?.statusLuz === NO_DATA_LABEL;
+  const luzLigada = sensorData?.luzLigada === true;
+
   return (
     <div className="p-6 bg-white rounded-lg shadow-lg">
       {/* Cabeçalho com status */}
@@ -80,7 +105,7 @@ export default function RealtimeSensorDisplay() {
           <div className="text-center pb-4 border-b">
             <p className="text-sm text-gray-500">Última atualização</p>
             <p className="text-lg font-mono font-semibold text-gray-700">
-              {sensorData.dataHora}
+              {sensorData.dataHora || NO_DATA_LABEL}
             </p>
             <div className="flex justify-center gap-4 mt-2 text-xs text-gray-500">
               {sensorData.tipo && (
@@ -104,109 +129,141 @@ export default function RealtimeSensorDisplay() {
           {/* Valores principais */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Temperatura */}
-            <div className="p-4 bg-gradient-to-br from-red-50 to-orange-50 rounded-lg border border-red-200">
+            <div className={metricCardClass(
+              "p-4 bg-gradient-to-br from-red-50 to-orange-50 rounded-lg border border-red-200",
+              sensorData.temperaturaDisplay && sensorData.temperaturaDisplay !== NO_DATA_LABEL,
+            )}>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">🌡️</span>
+                <span className="text-2xl">
+                  {renderMetricIcon('🌡️', sensorData.temperaturaDisplay && sensorData.temperaturaDisplay !== NO_DATA_LABEL)}
+                </span>
                 <p className="text-sm font-semibold text-gray-600">Temperatura</p>
               </div>
               <p className="text-3xl font-bold text-red-600">
-                {sensorData.temperatura.toFixed(1)}°C
+                {renderMetricValue(sensorData.temperaturaDisplay, '°C')}
               </p>
             </div>
 
             {/* Umidade do Ar */}
-            <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
+            <div className={metricCardClass(
+              "p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-200",
+              sensorData.umidadeArDisplay && sensorData.umidadeArDisplay !== NO_DATA_LABEL,
+            )}>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">💧</span>
+                <span className="text-2xl">
+                  {renderMetricIcon('💧', sensorData.umidadeArDisplay && sensorData.umidadeArDisplay !== NO_DATA_LABEL)}
+                </span>
                 <p className="text-sm font-semibold text-gray-600">Umidade do Ar</p>
               </div>
               <p className="text-3xl font-bold text-blue-600">
-                {sensorData.umidadeAr.toFixed(1)}%
+                {renderMetricValue(sensorData.umidadeArDisplay, '%')}
               </p>
             </div>
 
             {/* Luminosidade */}
-            <div className="p-4 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+            <div className={metricCardClass(
+              "p-4 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-lg border border-yellow-200",
+              sensorData.luminosidadeDisplay && sensorData.luminosidadeDisplay !== NO_DATA_LABEL,
+            )}>
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">☀️</span>
+                <span className="text-2xl">
+                  {renderMetricIcon('☀️', sensorData.luminosidadeDisplay && sensorData.luminosidadeDisplay !== NO_DATA_LABEL)}
+                </span>
                 <p className="text-sm font-semibold text-gray-600">Luminosidade</p>
               </div>
               <p className="text-3xl font-bold text-yellow-600">
-                {sensorData.luminosidade}%
+                {renderMetricValue(sensorData.luminosidadeDisplay, '%')}
               </p>
             </div>
 
             {/* Umidade do Solo */}
-            <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
+            <div className={metricCardClass(
+              "p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200",
+              sensorData.umidadeSoloDisplay && sensorData.umidadeSoloDisplay !== NO_DATA_LABEL,
+            )}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">🌱</span>
+                  <span className="text-2xl">
+                    {renderMetricIcon('🌱', sensorData.umidadeSoloDisplay && sensorData.umidadeSoloDisplay !== NO_DATA_LABEL)}
+                  </span>
                   <p className="text-sm font-semibold text-gray-600">Umidade do Solo</p>
                 </div>
                 <span className="text-[11px] uppercase tracking-wide text-green-700 font-semibold bg-green-100 px-2 py-0.5 rounded-full">
-                  {sensorData.umidadeSoloBruto ?? 'N/D'}
+                  {sensorData.umidadeSoloBrutoDisplay || NO_DATA_LABEL}
                 </span>
               </div>
               <p className="text-3xl font-bold text-green-600">
-                {sensorData.umidadeSolo}%
+                {renderMetricValue(sensorData.umidadeSoloDisplay, '%')}
               </p>
               <p className="text-xs text-green-700 mt-1 font-medium">
-                Valor bruto (ADC): {sensorData.umidadeSoloBruto ?? 'N/D'}
+                Valor bruto (ADC): {sensorData.umidadeSoloBrutoDisplay || NO_DATA_LABEL}
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Status da Bomba */}
-            <div className={`p-4 rounded-lg border transition ${
-              sensorData.bombaAtiva
-                ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300 shadow-sm'
-                : 'bg-white border-gray-200'
-            }`}>
+            <div className={metricCardClass(
+              `p-4 rounded-lg border transition ${
+                bombaAtiva
+                  ? 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-300 shadow-sm'
+                  : 'bg-white border-gray-200'
+              }`,
+              !bombaSemDados,
+            )}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className={`text-3xl ${sensorData.bombaAtiva ? 'animate-pulse' : ''}`}>
-                    {sensorData.bombaAtiva ? '🚿' : '💧'}
+                  <span className={`text-3xl ${bombaAtiva ? 'animate-pulse' : ''}`}>
+                    {renderMetricIcon(bombaAtiva ? '🚿' : '💧', !bombaSemDados)}
                   </span>
                   <div>
                     <p className="text-sm font-semibold text-gray-600">Bomba d'água</p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {sensorData.statusBomba}
+                      {sensorData.statusBomba || NO_DATA_LABEL}
                     </p>
                   </div>
                 </div>
                 <div className={`px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wide ${
-                  sensorData.bombaAtiva
-                    ? 'bg-blue-100 border border-blue-200 text-blue-700'
-                    : 'bg-slate-100 border border-slate-200 text-slate-500'
+                  bombaSemDados
+                    ? 'bg-slate-100 border border-dashed border-slate-300 text-slate-400'
+                    : bombaAtiva
+                      ? 'bg-blue-100 border border-blue-200 text-blue-700'
+                      : 'bg-slate-100 border border-slate-200 text-slate-500'
                 }`}>
-                  {sensorData.bombaAtiva ? 'Ativa' : 'Desativada'}
+                  {bombaSemDados ? NO_DATA_LABEL : (bombaAtiva ? 'Ativa' : 'Desativada')}
                 </div>
               </div>
             </div>
 
             {/* Status da Iluminação */}
-            <div className={`p-4 rounded-lg border transition ${
-              sensorData.luzLigada
-                ? 'bg-gradient-to-r from-yellow-50 to-amber-100 border-amber-200 shadow-sm'
-                : 'bg-white border-gray-200'
-            }`}>
+            <div className={metricCardClass(
+              `p-4 rounded-lg border transition ${
+                luzLigada
+                  ? 'bg-gradient-to-r from-yellow-50 to-amber-100 border-amber-200 shadow-sm'
+                  : 'bg-white border-gray-200'
+              }`,
+              !luzSemDados,
+            )}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">{sensorData.luzLigada ? '💡' : '💤'}</span>
+                  <span className="text-3xl">
+                    {renderMetricIcon(luzLigada ? '💡' : '💤', !luzSemDados)}
+                  </span>
                   <div>
                     <p className="text-sm font-semibold text-gray-600">Iluminação</p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {sensorData.statusLuz}
+                      {sensorData.statusLuz || NO_DATA_LABEL}
                     </p>
                   </div>
                 </div>
                 <div className={`px-4 py-2 rounded-full font-semibold text-xs uppercase tracking-wide ${
-                  sensorData.luzLigada
-                    ? 'bg-amber-100 border border-amber-200 text-amber-700'
-                    : 'bg-slate-100 border border-slate-200 text-slate-500'
+                  luzSemDados
+                    ? 'bg-slate-100 border border-dashed border-slate-300 text-slate-400'
+                    : luzLigada
+                      ? 'bg-amber-100 border border-amber-200 text-amber-700'
+                      : 'bg-slate-100 border border-slate-200 text-slate-500'
                 }`}>
-                  {sensorData.luzLigada ? 'Ligada' : 'Desligada'}
+                  {luzSemDados ? NO_DATA_LABEL : (luzLigada ? 'Ligada' : 'Desligada')}
                 </div>
               </div>
             </div>

@@ -12,12 +12,18 @@ import {
 } from "recharts";
 import { SENSOR_COLORS, SENSOR_META } from "../constants/sensors";
 
+const NO_DATA_LABEL = 'dado não recebido';
+
 const STATUS_COLORS = {
   bomba: "rgba(37, 99, 235, 0.18)",
   luz: "rgba(250, 204, 21, 0.18)",
 };
 
 function formatStatus(value, activeLabel, inactiveLabel) {
+  if (value === null || value === undefined) {
+    return NO_DATA_LABEL;
+  }
+
   return value ? activeLabel : inactiveLabel;
 }
 
@@ -68,14 +74,19 @@ function CustomLegend({ payload }) {
 export default function ChartPanel({ data, selected, loading, rangeLabel }) {
   const hasData = data.length > 0;
 
-  const chartData = useMemo(() => data.map((item) => ({
-    ...item,
-    soilRaw: item.soilRaw ?? item.umidadeSoloBruto ?? 0,
-    bomba: item.bomba ?? false,
-    luz: item.luz ?? false,
-    bombaArea: item.bomba ? 1 : 0,
-    luzArea: item.luz ? 1 : 0,
-  })), [data]);
+  const chartData = useMemo(() => data.map((item) => {
+    const bombaFlag = item.bomba === null || item.bomba === undefined ? null : Boolean(item.bomba);
+    const luzFlag = item.luz === null || item.luz === undefined ? null : Boolean(item.luz);
+
+    return {
+      ...item,
+      soilRaw: item.soilRaw ?? item.umidadeSoloBruto ?? 0,
+      bomba: bombaFlag,
+      luz: luzFlag,
+      bombaArea: bombaFlag ? 1 : 0,
+      luzArea: luzFlag ? 1 : 0,
+    };
+  }), [data]);
 
   const legendPayload = useMemo(() => ([
     { value: "Temperatura (°C)", type: "line", id: "temp", color: SENSOR_COLORS.temp },
